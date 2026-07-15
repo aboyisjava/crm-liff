@@ -202,6 +202,13 @@
               </div>
             </div>
 
+            <!-- Redemption Limit -->
+            <div class="flex flex-col">
+              <label for="promo-limit" class="text-xs font-semibold text-brand-gray mb-1">จำกัดสิทธิ์การแลกต่อคน (ครั้ง) / 0 = ไม่จำกัด</label>
+              <input type="number" id="promo-limit" min="0" value="0" placeholder="ระบุจำนวนครั้ง เช่น 1 (เว้นว่างหรือ 0 หากไม่จำกัด)" 
+                class="bg-brand-cream border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-xl px-4 py-2.5 text-xs outline-none transition-all duration-200">
+            </div>
+
             <button type="submit" id="btn-submit-promo" 
               class="w-full bg-brand-dark hover:bg-brand-charcoal text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all duration-300 transform active:scale-95 flex justify-center items-center gap-1.5 mt-2">
               <span>บันทึกข้อมูลคูปอง</span>
@@ -224,6 +231,7 @@
                 <th class="px-4 py-3">ไอคอน</th>
                 <th class="px-4 py-3">ชื่อโปรโมชั่น / รายละเอียด</th>
                 <th class="px-4 py-3 text-center">แต้มสะสมที่ใช้</th>
+                <th class="px-4 py-3 text-center">โควตาต่อคน</th>
                 <th class="px-4 py-3 text-center">สถานะ</th>
                 <th class="px-4 py-3 text-center">การจัดการ</th>
               </tr>
@@ -231,7 +239,7 @@
             <tbody id="promo-table-body" class="divide-y divide-brand-lightCream text-xs text-brand-charcoal">
               <!-- โปรโมชั่นโหลดจากฐานข้อมูล -->
               <tr>
-                <td colspan="5" class="px-4 py-12 text-center text-brand-gray/50">
+                <td colspan="6" class="px-4 py-12 text-center text-brand-gray/50">
                   <i class="fa-solid fa-spinner fa-spin text-lg mb-2 block"></i> กำลังโหลดรายการสิทธิพิเศษ...
                 </td>
               </tr>
@@ -294,7 +302,7 @@
   <script>
     // ==================== CONFIGURATION ====================
     // !!! วาง URL เว็บแอปของ Google Apps Script (ที่ลงท้ายด้วย /exec) !!!
-    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxSIQHu2nuYAYByBdN6x9OWr_54vYWGXj0BmDYdfZ9BYKSMUH4r_oSobvKL9gMEJaj4Rw/exec";
+    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzuQQjO_r5IAx5aGXAudOUhgZRktYBx3y38S7UBoN0TxmNpaCiLExKch_KLRjzpZlSt6A/exec";
     
     // ตั้งรหัสผ่านในการเข้าถึงหน้า Cashier
     var ADMIN_PASSCODE = "1234";
@@ -478,11 +486,11 @@
           if (response.status === 'success') {
             renderPromotionsTable(response.promotions);
           } else {
-            tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-12 text-center text-red-500">เกิดข้อผิดพลาด: ' + response.message + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-12 text-center text-red-500">เกิดข้อผิดพลาด: ' + response.message + '</td></tr>';
           }
         },
         function(err) {
-          tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-12 text-center text-red-500">ไม่สามารถเชื่อมต่อดึงโปรโมชั่นได้</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-12 text-center text-red-500">ไม่สามารถเชื่อมต่อดึงโปรโมชั่นได้</td></tr>';
         }
       );
     }
@@ -494,7 +502,7 @@
       var tbody = document.getElementById('promo-table-body');
       
       if (promos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-12 text-center text-brand-gray/50">ยังไม่มีรายการคูปองโปรโมชั่นในตาราง</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-12 text-center text-brand-gray/50">ยังไม่มีรายการคูปองโปรโมชั่นในตาราง</td></tr>';
         return;
       }
       
@@ -502,6 +510,9 @@
       for (var i = 0; i < promos.length; i++) {
         var p = promos[i];
         var iconClass = p.icon || 'fa-gift';
+        var limitText = (p.redemptionLimit && p.redemptionLimit > 0) 
+          ? p.redemptionLimit + ' ครั้ง/คน' 
+          : 'ไม่จำกัด';
         
         html += '<tr class="hover:bg-brand-lightCream/30 transition-colors">';
         html += '  <td class="px-4 py-4 text-center">';
@@ -514,6 +525,9 @@
         html += '    <div class="text-[10px] text-brand-gray mt-0.5">' + p.description + '</div>';
         html += '  </td>';
         html += '  <td class="px-4 py-4 text-center font-bold text-brand-dark">' + p.pointsRequired + ' แต้ม</td>';
+        
+        // Redemption Limit
+        html += '  <td class="px-4 py-4 text-center text-brand-gray/90 font-medium">' + limitText + '</td>';
         
         // Status Badge
         html += '  <td class="px-4 py-4 text-center">';
@@ -551,10 +565,11 @@
       var description = document.getElementById('promo-description').value;
       var points = document.getElementById('promo-points').value;
       var icon = document.getElementById('promo-icon').value;
+      var limit = document.getElementById('promo-limit').value || 0;
       
       callBackend(
         'addPromotion',
-        { title: title, description: description, pointsRequired: points, icon: icon },
+        { title: title, description: description, pointsRequired: points, icon: icon, redemptionLimit: limit },
         function(response) {
           submitBtn.disabled = false;
           submitBtn.classList.remove('opacity-75');
