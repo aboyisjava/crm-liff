@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Digital Member Card</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Prompt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome for Premium Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script>
+    // กำหนดธีมสีและการตั้งค่าของ Tailwind CSS
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cream: '#FDFBF7',
+              dark: '#5D4037',
+              gold: '#D4AF37',
+              accent: '#8D6E63',
+              lightCream: '#F5EFEB',
+              gray: '#7D6861',
+              charcoal: '#2E2522'
+            }
+          },
+          fontFamily: {
+            sans: ['Prompt', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #FDFBF7;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* เอฟเฟกต์การกะพริบสำหรับ Skeleton Loading */
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+      100% {
+        background-position: 200% 0;
+      }
+    }
+    
+    .skeleton {
+      background: linear-gradient(90deg, #EFEBE9 25%, #D7CCC8 50%, #EFEBE9 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite linear;
+    }
+
+    /* สไตล์สำหรับบัตรสมาชิกไล่โทนสีแบบพรีเมียม */
+    .card-premium {
+      background: linear-gradient(135deg, #4E342E 0%, #5D4037 35%, #8D6E63 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .card-premium::before {
+      content: '';
+      position: absolute;
+      top: -30%;
+      right: -20%;
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+      pointer-events: none;
+    }
+
+    .card-premium::after {
+      content: '';
+      position: absolute;
+      bottom: -40%;
+      left: -10%;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 70%);
+      pointer-events: none;
+    }
+    
+    /* ซ่อน Scrollbar ของบราวเซอร์ */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased text-brand-charcoal min-h-screen flex flex-col justify-between">
+
+  <!-- ==================== SKELETON LOADING VIEW ==================== -->
+  <div id="loading-view" class="w-full max-w-md mx-auto px-6 pt-8 pb-6 flex-grow flex flex-col justify-start">
+    <!-- Header Skeleton -->
+    <div class="flex justify-between items-center mb-6">
+      <div class="h-6 w-32 skeleton rounded-md"></div>
+      <div class="h-10 w-10 skeleton rounded-full"></div>
+    </div>
+    
+    <!-- Card Skeleton -->
+    <div class="h-56 w-full skeleton rounded-3xl mb-8"></div>
+    
+    <!-- QR Code Section Skeleton -->
+    <div class="bg-white rounded-3xl p-6 shadow-sm border border-[#EFEBE9] flex flex-col items-center mb-6">
+      <div class="h-4 w-40 skeleton rounded mb-4"></div>
+      <div class="h-40 w-40 skeleton rounded-xl mb-4"></div>
+      <div class="h-4 w-32 skeleton rounded"></div>
+    </div>
+  </div>
+
+  <!-- ==================== REGISTRATION FORM VIEW ==================== -->
+  <div id="register-view" class="hidden w-full max-w-md mx-auto px-6 pt-6 pb-6 flex-grow flex flex-col justify-between">
+    <div>
+      <!-- Header -->
+      <div class="flex flex-col items-center text-center mt-4 mb-6">
+        <div class="w-16 h-16 bg-brand-lightCream rounded-full flex items-center justify-center mb-3 text-brand-dark">
+          <i class="fa-solid fa-address-card text-2xl text-brand-accent"></i>
+        </div>
+        <h2 class="text-xl font-bold text-brand-dark">ลงทะเบียนสมาชิก</h2>
+        <p class="text-xs text-brand-gray mt-1 font-light">กรอกข้อมูลเพื่อรับบัตรสมาชิกดิจิทัลและคะแนนสะสม</p>
+      </div>
+
+      <!-- LINE Account Link Card -->
+      <div class="bg-brand-lightCream/40 border border-brand-lightCream rounded-2xl p-4 mb-6 flex items-center gap-3.5">
+        <img id="reg-avatar" src="" alt="LINE Avatar" class="w-12 h-12 rounded-full border-2 border-white object-cover shadow-sm">
+        <div>
+          <p class="text-[9px] text-brand-gray uppercase font-semibold tracking-wider">บัญชี LINE ที่เชื่อมต่อ</p>
+          <h4 id="reg-display-name" class="text-sm font-bold text-brand-charcoal">...</h4>
+        </div>
+      </div>
+
+      <!-- Form Inputs -->
+      <form id="reg-form" onsubmit="submitRegistration(event)" class="space-y-4">
+        <!-- Nickname -->
+        <div class="flex flex-col">
+          <label for="reg-nickname" class="text-xs font-semibold text-brand-gray mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-user-tag text-[10px] text-brand-accent"></i> ชื่อเล่น <span class="text-red-500">*</span>
+          </label>
+          <input type="text" id="reg-nickname" required placeholder="กรอกชื่อเล่นของคุณ" 
+            class="bg-white border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-2xl px-4 py-3 text-sm transition-all outline-none duration-200">
+        </div>
+
+        <!-- Birthdate -->
+        <div class="flex flex-col">
+          <label for="reg-birthdate" class="text-xs font-semibold text-brand-gray mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-calendar-days text-[10px] text-brand-accent"></i> วัน เดือน ปี เกิด <span class="text-red-500">*</span>
+          </label>
+          <input type="date" id="reg-birthdate" required 
+            class="bg-white border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-2xl px-4 py-3 text-sm transition-all outline-none duration-200">
+          <span class="text-[10px] text-brand-gray/70 mt-1">รับสิทธิประโยชน์พิเศษและของขวัญในเดือนเกิดของคุณ</span>
+        </div>
+
+        <!-- Phone Number -->
+        <div class="flex flex-col">
+          <label for="reg-phone" class="text-xs font-semibold text-brand-gray mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-phone text-[10px] text-brand-accent"></i> เบอร์ติดต่อ <span class="text-red-500">*</span>
+          </label>
+          <input type="tel" id="reg-phone" required pattern="[0-9]{10}" placeholder="กรอกเบอร์โทรศัพท์ 10 หลัก"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
+            class="bg-white border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-2xl px-4 py-3 text-sm transition-all outline-none duration-200">
+        </div>
+
+        <!-- Gender -->
+        <div class="flex flex-col">
+          <label for="reg-gender" class="text-xs font-semibold text-brand-gray mb-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-venus-mars text-[10px] text-brand-accent"></i> เพศ <span class="text-red-500">*</span>
+          </label>
+          <div class="relative">
+            <select id="reg-gender" required 
+              class="w-full bg-white border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-2xl px-4 py-3 text-sm transition-all outline-none appearance-none duration-200">
+              <option value="" disabled selected>เลือกเพศ</option>
+              <option value="ชาย">ชาย</option>
+              <option value="หญิง">หญิง</option>
+              <option value="อื่นๆ">อื่นๆ</option>
+              <option value="ไม่ระบุ">ไม่ระบุ</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-brand-gray">
+              <i class="fa-solid fa-chevron-down text-xs"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" id="btn-submit-reg" 
+          class="w-full bg-brand-dark hover:bg-brand-charcoal text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] flex justify-center items-center gap-2 mt-2">
+          <span>ยืนยันการสมัครสมาชิก</span>
+          <i id="btn-submit-spinner" class="fa-solid fa-circle-notch fa-spin hidden"></i>
+        </button>
+      </form>
+    </div>
+
+    <!-- Agreement Notice -->
+    <div class="text-center pt-6 text-[10px] text-brand-gray/60 leading-relaxed">
+      การลงทะเบียนถือเป็นการยอมรับนโยบายข้อมูลส่วนบุคคลของระบบสมาชิก Premium Coffee
+    </div>
+  </div>
+
+  <!-- ==================== MAIN CONTENT VIEW ==================== -->
+  <div id="main-view" class="hidden w-full max-w-md mx-auto px-6 pt-6 pb-6 flex-grow flex flex-col justify-between">
+    <div>
+      <!-- Shop Header -->
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <span class="text-xs uppercase tracking-widest text-brand-gray font-semibold">Welcome to</span>
+          <h1 class="text-xl font-bold text-brand-dark flex items-center gap-2">
+            <i class="fa-solid fa-mug-hot text-brand-accent"></i> PREMIUM COFFEE
+          </h1>
+        </div>
+        <img id="user-avatar" src="" alt="Profile" class="w-10 h-10 rounded-full border-2 border-brand-accent shadow-sm object-cover">
+      </div>
+
+      <!-- Membership Card -->
+      <div class="card-premium rounded-3xl p-6 text-white shadow-xl shadow-brand-dark/10 mb-6 flex flex-col justify-between min-h-[220px]">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs text-white/70 uppercase tracking-wider mb-1">MEMBER NAME</p>
+            <h2 id="card-name" class="text-xl font-bold tracking-wide">กำลังโหลด...</h2>
+          </div>
+          <div class="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 flex items-center gap-1.5">
+            <i class="fa-solid fa-crown text-brand-gold text-xs"></i>
+            <span id="card-level" class="text-xs font-semibold tracking-wider">Welcome</span>
+          </div>
+        </div>
+
+        <div class="mt-8 flex justify-between items-end">
+          <div>
+            <p class="text-xs text-white/70 uppercase tracking-wider mb-1">YOUR POINTS</p>
+            <div class="flex items-baseline gap-1.5">
+              <span id="card-points" class="text-4xl font-extrabold tracking-tight">0</span>
+              <span class="text-sm font-medium opacity-80">คะแนน</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <i class="fa-solid fa-qrcode text-3xl opacity-30"></i>
+            <p class="text-[9px] text-white/50 tracking-wider mt-2">DIGITAL MEMBER CARD</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Point Progress & QR Scan Section -->
+      <div class="bg-white rounded-3xl p-6 shadow-sm border border-brand-lightCream mb-6">
+        <!-- Progress Bar to Next Tier -->
+        <div id="progress-container" class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-medium text-brand-gray flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-info"></i> ความคืบหน้าระดับสมาชิก
+            </span>
+            <span id="progress-text" class="text-xs font-bold text-brand-dark">กำลังคำนวณ...</span>
+          </div>
+          <div class="w-full bg-brand-lightCream rounded-full h-2.5 overflow-hidden">
+            <div id="progress-bar" class="bg-gradient-to-r from-brand-accent to-brand-dark h-full transition-all duration-700 ease-out" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- QR Code for Scanner -->
+        <div class="flex flex-col items-center">
+          <p class="text-xs font-medium text-brand-gray mb-3 text-center">แสดง QR Code นี้แก่พนักงานเพื่อสะสม/ใช้แต้ม</p>
+          <div class="bg-brand-cream p-4 rounded-2xl border border-brand-lightCream shadow-inner">
+            <img id="member-qr" src="" alt="Membership QR" class="w-40 h-40 object-contain">
+          </div>
+          <p id="member-id-text" class="text-[10px] text-brand-gray/60 font-mono mt-3">ID: U12345...</p>
+        </div>
+      </div>
+
+      <!-- Privileges & Coupons -->
+      <div class="mb-6">
+        <h3 class="text-sm font-bold text-brand-dark mb-3 uppercase tracking-wider flex items-center gap-2">
+          <i class="fa-solid fa-gift text-brand-accent"></i> สิทธิพิเศษสำหรับคุณ
+        </h3>
+        
+        <div class="space-y-3">
+          <!-- Coupon 1 -->
+          <div class="flex items-center bg-white p-3.5 rounded-2xl border border-brand-lightCream hover:border-brand-accent/30 transition-all duration-300">
+            <div class="w-12 h-12 bg-brand-lightCream rounded-xl flex items-center justify-center text-brand-dark">
+              <i class="fa-solid fa-percent text-lg text-brand-accent"></i>
+            </div>
+            <div class="ml-4 flex-grow">
+              <h4 class="text-xs font-bold text-brand-charcoal">รับส่วนลดเครื่องดื่ม 10%</h4>
+              <p class="text-[10px] text-brand-gray/70">ใช้ 100 แต้ม เพื่อแลกรับสิทธิ์</p>
+            </div>
+            <button class="bg-brand-dark hover:bg-brand-charcoal text-white text-[11px] font-medium px-3.5 py-1.5 rounded-full transition-colors duration-200">
+              แลกสิทธิ์
+            </button>
+          </div>
+
+          <!-- Coupon 2 -->
+          <div class="flex items-center bg-white p-3.5 rounded-2xl border border-brand-lightCream hover:border-brand-accent/30 transition-all duration-300">
+            <div class="w-12 h-12 bg-brand-lightCream rounded-xl flex items-center justify-center text-brand-dark">
+              <i class="fa-solid fa-mug-hot text-lg text-brand-accent"></i>
+            </div>
+            <div class="ml-4 flex-grow">
+              <h4 class="text-xs font-bold text-brand-charcoal">แลกรับเครื่องดื่มฟรี 1 แก้ว</h4>
+              <p class="text-[10px] text-brand-gray/70">ใช้ 500 แต้ม เพื่อแลกรับสิทธิ์</p>
+            </div>
+            <button class="bg-brand-dark hover:bg-brand-charcoal text-white text-[11px] font-medium px-3.5 py-1.5 rounded-full transition-colors duration-200">
+              แลกสิทธิ์
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer Copyright -->
+    <div class="text-center pt-4 border-t border-brand-lightCream">
+      <p class="text-[10px] text-brand-gray/60 font-medium">&copy; 2026 Premium Coffee Membership. All Rights Reserved.</p>
+    </div>
+  </div>
+
+  <!-- ==================== ERROR / NOTICE VIEW ==================== -->
+  <div id="error-view" class="hidden w-full max-w-md mx-auto px-6 py-12 flex-grow flex flex-col justify-center items-center text-center">
+    <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4 text-2xl">
+      <i class="fa-solid fa-circle-exclamation"></i>
+    </div>
+    <h2 class="text-lg font-bold text-brand-charcoal mb-2">ไม่สามารถเข้าสู่ระบบสมาชิกได้</h2>
+    <p id="error-message" class="text-xs text-brand-gray mb-6 px-4">กรุณาเปิดหน้าจอนี้ผ่านแอปพลิเคชัน LINE เพื่อสิทธิ์การเข้าถึงข้อมูลสมาชิก</p>
+    <button onclick="retryInit()" class="bg-brand-dark hover:bg-brand-charcoal text-white text-xs font-medium px-6 py-2.5 rounded-full shadow-md transition-colors duration-200">
+      ลองใหม่อีกครั้ง
+    </button>
+  </div>
+
+  <!-- ==================== DEBUG LOG CONSOLE ==================== -->
+  <div id="debug-log-section" class="w-full max-w-md mx-auto px-6 py-4 bg-brand-lightCream/30 border-t border-brand-lightCream mt-4">
+    <p class="text-[10px] font-bold text-brand-gray mb-1 flex items-center gap-1.5">
+      <i class="fa-solid fa-bug"></i> SYSTEM LOGS (บันทึกตรวจสอบปัญหา)
+    </p>
+    <div id="debug-log" class="text-[9px] font-mono text-brand-gray/70 space-y-1 max-h-36 overflow-y-auto leading-relaxed">
+      <div>[Ready] เริ่มโหลดหน้าจอ...</div>
+    </div>
+  </div>
+
+  <!-- LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  
+  <script>
+    // ==================== GLOBAL ERROR DIAGNOSTICS ====================
+    window.onerror = function(message, source, lineno, colno, error) {
+      var errStr = message + " (ที่ไฟล์ " + (source ? source.split('/').pop() : 'unknown') + " บรรทัดที่ " + lineno + ":" + colno + ")";
+      console.error("Global JS Error:", errStr);
+      showError("เกิดข้อผิดพลาดในการรันสคริปต์: " + errStr);
+      logDebug("CRASH: " + errStr);
+      return false;
+    };
+
+    window.onunhandledrejection = function(event) {
+      var reason = event.reason ? (event.reason.message || event.reason.toString()) : "Promise Rejection";
+      console.error("Unhandled Promise Rejection:", reason);
+      showError("ระบบขัดข้อง (Promise Error): " + reason);
+      logDebug("CRASH Promise: " + reason);
+    };
+
+    // ==================== CONFIGURATION ====================
+    // !!! สำคัญ: แก้ไขสองตัวแปรนี้ให้ถูกต้อง !!!
+    var LIFF_ID = "2010716741-EOciBKIa"; 
+    
+    // คัดลอก URL เว็บแอปของ Google Apps Script (ที่ลงท้ายด้วย /exec) มาวางที่นี่
+    var WEB_APP_URL = "วาง_WEB_APP_URL_ของคุณที่นี่"; 
+    
+    // โครงสร้างเกณฑ์ระดับสมาชิก (Level Rules)
+    var TIER_RULES = [
+      { name: "Welcome", minPoints: 0, nextPoints: 200, nextTier: "Silver" },
+      { name: "Silver", minPoints: 200, nextPoints: 500, nextTier: "Gold" },
+      { name: "Gold", minPoints: 500, nextPoints: 1000, nextTier: "Platinum VIP" },
+      { name: "Platinum VIP", minPoints: 1000, nextPoints: null, nextTier: null }
+    ];
+
+    var lineProfileData = null; // สำหรับเก็บ LINE Profile เมื่อโหลดสำเร็จ
+
+    /**
+     * ส่งคำขอแบบ API POST ไปยัง Google Apps Script หลังบ้าน (เลี่ยงปัญหา iframe/cookie block)
+     */
+    function callBackend(action, data, onSuccess, onFailure) {
+      if (WEB_APP_URL === "วาง_WEB_APP_URL_ของคุณที่นี่" || !WEB_APP_URL) {
+        logDebug("ERROR: ยังไม่ได้กำหนดตัวแปร WEB_APP_URL ในไฟล์ index.html");
+        alert("กรุณาตั้งค่า WEB_APP_URL ในโค้ดก่อนเริ่มทำรายการ");
+        onFailure("WEB_APP_URL missing");
+        return;
+      }
+      
+      var payload = Object.assign({ action: action }, data);
+      
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        return res.json();
+      })
+      .then(function(response) {
+        onSuccess(response);
+      })
+      .catch(function(err) {
+        console.error("API Call Failed:", err);
+        onFailure(err);
+      });
+    }
+
+    /**
+     * พิมพ์ข้อความลงคอนโซลดีบั๊กบนหน้าจอ
+     */
+    function logDebug(msg) {
+      console.log("[DEBUG] " + msg);
+      var logDiv = document.getElementById('debug-log');
+      if (logDiv) {
+        var newLog = document.createElement('div');
+        newLog.innerText = new Date().toLocaleTimeString() + ': ' + msg;
+        logDiv.appendChild(newLog);
+      }
+    }
+
+    // เริ่มการทำงานทันทีโดยไม่ต้องรอ window.onload (เพื่อความเร็วและลดการค้างบนมือถือ)
+    logDebug("Starting LIFF flow...");
+    if (LIFF_ID === "YOUR_LIFF_ID" || !LIFF_ID) {
+      showError("ยังไม่ได้ตั้งค่า LIFF ID ในโค้ดหน้าเว็บ index.html กรุณาอัปเดตค่าตัวแปร LIFF_ID ก่อนทำรายการ");
+      logDebug("ERROR: LIFF_ID is not configured");
+    } else {
+      initializeLiff();
+    }
+
+    /**
+     * เริ่มการเชื่อมต่อกับ LINE LIFF SDK
+     */
+    function initializeLiff() {
+      logDebug("กำลังเชื่อมต่อ LINE LIFF SDK...");
+      liff.init({ liffId: LIFF_ID })
+        .then(function() {
+          logDebug("เชื่อมต่อ LIFF สำเร็จ. สถานะล็อกอิน: " + liff.isLoggedIn());
+          
+          if (!liff.isLoggedIn()) {
+            logDebug("ยังไม่ได้ล็อกอิน LINE, กำลังพาล็อกอิน...");
+            liff.login();
+          } else {
+            logDebug("ล็อกอิน LINE แล้ว, กำลังดึงข้อมูลโปรไฟล์...");
+            getUserProfile();
+          }
+        })
+        .catch(function(err) {
+          console.error("LIFF Initialization failed:", err);
+          showError("เกิดข้อผิดพลาดในการโหลดระบบสมาชิก: " + err.message);
+          logDebug("ERROR LIFF Init: " + err.message);
+        });
+    }
+
+    /**
+     * ดึงข้อมูล LINE Profile และตรวจสอบข้อมูลสมาชิกบน Google Sheets
+     */
+    function getUserProfile() {
+      liff.getProfile()
+        .then(function(profile) {
+          lineProfileData = profile;
+          logDebug("ดึงโปรไฟล์ LINE สำเร็จ! ชื่อ: " + profile.displayName + ", ID: " + profile.userId);
+          
+          logDebug("กำลังเรียก API ตรวจสอบสิทธิ์สมาชิก...");
+          callBackend(
+            'checkMembership',
+            { lineUserId: profile.userId },
+            onCheckMembership,
+            function(err) {
+              showError("ไม่สามารถเชื่อมต่อฐานข้อมูลสมาชิกได้: " + err.toString());
+              logDebug("ERROR API checkMembership: " + err.toString());
+            }
+          );
+        })
+        .catch(function(err) {
+          console.error("Failed to get profile:", err);
+          showError("ไม่สามารถเข้าถึงข้อมูลโปรไฟล์ LINE ของคุณได้");
+          logDebug("ERROR getProfile: " + err.message);
+        });
+    }
+
+    /**
+     * ผลการตรวจสอบความเป็นสมาชิก
+     */
+    function onCheckMembership(response) {
+      logDebug("ได้รับข้อมูลตอบกลับจาก API สำเร็จ!");
+      if (response.status === 'success') {
+        logDebug("ผลตรวจสมาชิก: exists = " + response.exists);
+        if (response.exists === true) {
+          logDebug("มีประวัติสมาชิกอยู่แล้ว. กำลังแสดงหน้าจอหน้าบัตร...");
+          updateUI(response.member);
+        } else {
+          logDebug("ยังไม่มีประวัติในระบบ. กำลังแสดงฟอร์มลงทะเบียนสมาชิกใหม่...");
+          showRegisterForm();
+        }
+      } else {
+        showError("เกิดข้อผิดพลาดในการตรวจสอบระบบสมาชิก: " + response.message);
+        logDebug("ERROR checkMembership Status: " + response.message);
+      }
+    }
+
+    /**
+     * แสดงหน้าต่างฟอร์มกรอกข้อมูลการลงทะเบียน
+     */
+    function showRegisterForm() {
+      document.getElementById('loading-view').classList.add('hidden');
+      document.getElementById('main-view').classList.add('hidden');
+      document.getElementById('error-view').classList.add('hidden');
+      document.getElementById('register-view').classList.remove('hidden');
+      
+      // ดึงรูปและชื่อจากโปรไฟล์มาแสดงบนฟอร์ม
+      if (lineProfileData) {
+        document.getElementById('reg-display-name').innerText = lineProfileData.displayName;
+        if (lineProfileData.pictureUrl) {
+          document.getElementById('reg-avatar').src = lineProfileData.pictureUrl;
+        } else {
+          document.getElementById('reg-avatar').src = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+        }
+      }
+      logDebug("หน้าฟอร์มลงทะเบียนเปิดทำงานเรียบร้อยแล้ว.");
+    }
+
+    /**
+     * จัดการส่งข้อมูลลงทะเบียนไปยัง Google Sheets
+     */
+    function submitRegistration(event) {
+      event.preventDefault();
+      
+      if (!lineProfileData) {
+        showError("เกิดข้อผิดพลาดด้านความปลอดภัย กรุณาปิดหน้านี้แล้วลองใหม่อีกครั้ง");
+        logDebug("ERROR: No LINE profile data found for registration");
+        return;
+      }
+      
+      // แสดงสถานะการรันบนปุ่มลงทะเบียน
+      var submitBtn = document.getElementById('btn-submit-reg');
+      var spinner = document.getElementById('btn-submit-spinner');
+      
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-75');
+      spinner.classList.remove('hidden');
+      
+      var nickname = document.getElementById('reg-nickname').value;
+      var birthdate = document.getElementById('reg-birthdate').value;
+      var phone = document.getElementById('reg-phone').value;
+      var gender = document.getElementById('reg-gender').value;
+      
+      logDebug("กำลังส่งคำขอลงทะเบียนสมาชิกใหม่ผ่าน API...");
+      
+      callBackend(
+        'registerMember',
+        {
+          lineUserId: lineProfileData.userId,
+          displayName: lineProfileData.displayName,
+          pictureUrl: lineProfileData.pictureUrl,
+          nickname: nickname,
+          birthdate: birthdate,
+          phone: phone,
+          gender: gender
+        },
+        function(response) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-75');
+          spinner.classList.add('hidden');
+          
+          if (response.status === 'success') {
+            logDebug("ลงทะเบียนใหม่สำเร็จ! กำลังสลับไปแสดงบัตรสมาชิก...");
+            document.getElementById('register-view').classList.add('hidden');
+            updateUI(response.member);
+          } else {
+            alert("การลงทะเบียนไม่สำเร็จ: " + response.message);
+            logDebug("ERROR registration status: " + response.message);
+          }
+        },
+        function(err) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-75');
+          spinner.classList.add('hidden');
+          
+          console.error("Registration failed:", err);
+          alert("เกิดข้อผิดพลาดในการลงทะเบียนผ่าน API: " + err.toString());
+          logDebug("ERROR registration connection: " + err.toString());
+        }
+      );
+    }
+
+    /**
+     * อัปเดตข้อมูลของสมาชิกในหน้าจอ UI บัตรสมาชิก
+     */
+    function updateUI(member) {
+      // 1. ซ่อนหน้าโหลด แสดงหน้าข้อมูลหลัก
+      document.getElementById('loading-view').classList.add('hidden');
+      document.getElementById('register-view').classList.add('hidden');
+      document.getElementById('main-view').classList.remove('hidden');
+      document.getElementById('error-view').classList.add('hidden');
+
+      // 2. แสดงรูปโปรไฟล์
+      if (member.profileImg) {
+        document.getElementById('user-avatar').src = member.profileImg;
+      } else {
+        document.getElementById('user-avatar').src = "https://cdn-icons-png.flaticon.com/512/847/847969.png"; // Fallback
+      }
+
+      // 3. ใส่ข้อมูลบัตรสมาชิก (แสดงชื่อเล่นประกอบ หรือหากไม่มีให้แสดงชื่อจากระบบ)
+      var displayName = member.nickname ? member.name + ' (' + member.nickname + ')' : member.name;
+      document.getElementById('card-name').innerText = displayName || "ไม่ระบุชื่อ";
+      document.getElementById('card-level').innerText = member.level || "Welcome";
+      document.getElementById('card-points').innerText = Number(member.points).toLocaleString();
+
+      // 4. คำนวณความคืบหน้าระดับสมาชิก (Progress Bar)
+      calculateProgress(member.points, member.level);
+
+      // 5. แสดงผล QR Code ด้วย LINE User ID
+      var qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=5D4037&bgcolor=FDFBF7&data=' + encodeURIComponent(member.lineUserId);
+      document.getElementById('member-qr').src = qrUrl;
+
+      // 6. แสดง LINE User ID แบบสั้นย่อๆ
+      var shortId = member.lineUserId.substring(0, 8) + '...' + member.lineUserId.substring(member.lineUserId.length - 6);
+      document.getElementById('member-id-text').innerText = 'ID: ' + shortId;
+      
+      logDebug("บัตรสมาชิกอัปเดตข้อมูลและแสดงผลสมบูรณ์.");
+    }
+
+    /**
+     * คำนวณแต้มสะสมและปรับเป้าหมายความคืบหน้า (Progress Bar)
+     */
+    function calculateProgress(points, level) {
+      var currentTier = TIER_RULES.find(function(t) { return t.name.toLowerCase() === level.toLowerCase(); });
+      
+      if (!currentTier) {
+        currentTier = TIER_RULES[0];
+      }
+
+      var progressBar = document.getElementById('progress-bar');
+      var progressText = document.getElementById('progress-text');
+
+      if (currentTier.nextPoints === null) {
+        progressBar.style.width = "100%";
+        progressText.innerText = "คุณอยู่ในระดับสูงสุดแล้ว 🎉";
+      } else {
+        var min = currentTier.minPoints;
+        var max = currentTier.nextPoints;
+        var diff = max - min;
+        var earnedInTier = points - min;
+        
+        var percent = (earnedInTier / diff) * 100;
+        if (percent < 0) percent = 0;
+        if (percent > 100) percent = 100;
+
+        progressBar.style.width = percent + '%';
+        
+        var pointsNeeded = max - points;
+        if (pointsNeeded > 0) {
+          progressText.innerText = 'สะสมอีก ' + pointsNeeded + ' คะแนน เพื่อเป็น ' + currentTier.nextTier;
+        } else {
+          progressText.innerText = 'คะแนนพร้อมปรับสู่ระดับถัดไป';
+        }
+      }
+    }
+
+    /**
+     * แสดงหน้าต่างข้อความเกิดข้อผิดพลาด
+     */
+    function showError(message) {
+      document.getElementById('loading-view').classList.add('hidden');
+      document.getElementById('register-view').classList.add('hidden');
+      document.getElementById('main-view').classList.add('hidden');
+      
+      var errorView = document.getElementById('error-view');
+      errorView.classList.remove('hidden');
+      document.getElementById('error-message').innerText = message;
+    }
+
+    /**
+     * กดลองใหม่อีกครั้ง
+     */
+    function retryInit() {
+      document.getElementById('error-view').classList.add('hidden');
+      document.getElementById('loading-view').classList.remove('hidden');
+      initializeLiff();
+    }
+  </script>
+</body>
+</html>
