@@ -272,15 +272,29 @@
         </div>
       </div>
 
-      <!-- Privileges & Coupons -->
-      <div class="mb-6">
-        <h3 class="text-sm font-bold text-brand-dark mb-3 uppercase tracking-wider flex items-center gap-2">
-          <i class="fa-solid fa-gift text-brand-accent"></i> สิทธิพิเศษสำหรับคุณ
-        </h3>
-        
+      <!-- Tabs Navigation -->
+      <div class="flex border-b border-brand-lightCream mb-4">
+        <button id="tab-btn-coupons" onclick="switchUserTab('coupons')" class="flex-1 pb-3 text-xs font-bold text-brand-dark border-b-2 border-brand-dark transition-all duration-200">
+          <i class="fa-solid fa-gift mr-1 text-brand-accent"></i> สิทธิพิเศษสำหรับคุณ
+        </button>
+        <button id="tab-btn-history" onclick="switchUserTab('history')" class="flex-1 pb-3 text-xs font-bold text-brand-gray border-b-2 border-transparent hover:text-brand-dark transition-all duration-200">
+          <i class="fa-solid fa-clock-rotate-left mr-1"></i> ประวัติการแลกสิทธิ์
+        </button>
+      </div>
+
+      <!-- Tab Content 1: Coupons -->
+      <div id="tab-content-coupons" class="mb-6">
         <div id="promotions-list" class="space-y-3">
           <!-- โหลดโปรโมชั่นไดนามิกจากฐานข้อมูล -->
           <div class="text-center py-4 text-xs text-brand-gray/50">กำลังโหลดโปรโมชั่น...</div>
+        </div>
+      </div>
+
+      <!-- Tab Content 2: History Logs -->
+      <div id="tab-content-history" class="hidden mb-6">
+        <div id="history-list" class="space-y-3">
+          <!-- โหลดประวัติการแลกจากฐานข้อมูล -->
+          <div class="text-center py-4 text-xs text-brand-gray/50">กำลังโหลดประวัติ...</div>
         </div>
       </div>
     </div>
@@ -288,6 +302,55 @@
     <!-- Footer Copyright -->
     <div class="text-center pt-4 border-t border-brand-lightCream">
       <p class="text-[10px] text-brand-gray/60 font-medium">&copy; 2026 Slowmate Bakery Membership. All Rights Reserved.</p>
+    </div>
+  </div>
+
+  <!-- ==================== REDEMPTION SUCCESS TICKET VIEW ==================== -->
+  <div id="redeem-success-view" class="hidden w-full max-w-md mx-auto px-6 pt-8 pb-6 flex-grow flex flex-col justify-between">
+    <div class="bg-white rounded-3xl p-6 shadow-xl border border-brand-lightCream flex flex-col items-center text-center">
+      <!-- Checked Icon -->
+      <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4 text-green-500 shadow-inner">
+        <i class="fa-solid fa-circle-check text-4xl animate-bounce"></i>
+      </div>
+      
+      <h2 class="text-lg font-bold text-brand-dark">แลกรับสิทธิ์สำเร็จ!</h2>
+      <p class="text-[11px] text-brand-gray mt-1 mb-6">แสดงหน้านี้แก่พนักงานเพื่อรับสิทธิ์ / ถ่ายรูปเพื่อยืนยันสิทธิ์</p>
+      
+      <!-- Receipt Box -->
+      <div class="w-full bg-brand-cream border border-dashed border-brand-accent/40 rounded-2xl p-4 mb-6 text-left text-xs space-y-2.5">
+        <div class="flex justify-between">
+          <span class="text-brand-gray">ชื่อสมาชิก:</span>
+          <span id="ticket-member-name" class="font-bold text-brand-charcoal">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-brand-gray">สิทธิ์ที่แลก:</span>
+          <span id="ticket-promo-title" class="font-bold text-brand-dark text-right max-w-[180px]">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-brand-gray">รหัสแลกสิทธิ์:</span>
+          <span id="ticket-id" class="font-mono font-bold text-brand-charcoal">-</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-brand-gray">เวลาที่ทำรายการ:</span>
+          <span id="ticket-time" class="font-medium text-brand-charcoal">-</span>
+        </div>
+      </div>
+
+      <!-- Verification QR Code -->
+      <div class="flex flex-col items-center mb-2">
+        <div class="bg-brand-cream p-3.5 rounded-2xl border border-brand-lightCream shadow-inner mb-3">
+          <img id="ticket-qr" src="" alt="Redemption Verification QR" class="w-36 h-36 object-contain">
+        </div>
+        <span class="text-[9px] text-brand-gray/60 font-medium">QR Code ตรวจสอบข้อมูลโดยพนักงาน</span>
+      </div>
+    </div>
+
+    <!-- Back Button -->
+    <div class="mt-6 mb-2">
+      <button onclick="closeSuccessTicket()" 
+        class="w-full bg-brand-dark hover:bg-brand-charcoal text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all duration-300 transform active:scale-95 text-center text-xs">
+        กลับหน้าหลักบัตรสมาชิก
+      </button>
     </div>
   </div>
 
@@ -338,7 +401,7 @@
     var LIFF_ID = "2010716741-EOciBKIa"; 
     
     // คัดลอก URL เว็บแอปของ Google Apps Script (ที่ลงท้ายด้วย /exec) มาวางที่นี่
-    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzuQQjO_r5IAx5aGXAudOUhgZRktYBx3y38S7UBoN0TxmNpaCiLExKch_KLRjzpZlSt6A/exec"; 
+    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyzy_L_BUi_4Qbw5dba9gY1sx0XRYhyVaasHlBxJEZAPoWKnpo_2C216zEqhnpRvSQq8g/exec"; 
     
     // โครงสร้างเกณฑ์ระดับสมาชิก (Level Rules)
     var TIER_RULES = [
@@ -349,6 +412,7 @@
     ];
 
     var lineProfileData = null; // สำหรับเก็บ LINE Profile เมื่อโหลดสำเร็จ
+    var currentMemberData = null; // สำหรับเก็บข้อมูลสมาชิกล่าสุดจาก Sheets
 
     /**
      * ส่งคำขอแบบ API POST ไปยัง Google Apps Script หลังบ้าน (เลี่ยงปัญหา iframe/cookie block)
@@ -562,6 +626,8 @@
      * อัปเดตข้อมูลของสมาชิกในหน้าจอ UI บัตรสมาชิก
      */
     function updateUI(member) {
+      currentMemberData = member; // เก็บข้อมูลผู้ใช้ล่าสุดไว้ในตัวแปร Global
+      
       // 1. ซ่อนหน้าโหลด แสดงหน้าข้อมูลหลัก
       document.getElementById('loading-view').classList.add('hidden');
       document.getElementById('register-view').classList.add('hidden');
@@ -674,9 +740,19 @@
         { lineUserId: lineUserId, promoId: promoId },
         function(response) {
           if (response.status === 'success') {
-            alert("แลกสิทธิ์สำเร็จ: " + response.message);
             logDebug("แลกสิทธิ์ \"" + title + "\" สำเร็จ!");
-            updateUI(response.member); // อัปเดต UI บัตรและแต้มคงเหลือแบบเรียลไทม์
+            updateUI(response.member); // อัปเดต UI บัตรและแต้มคงเหลือ
+            
+            // แสดงหน้าจอใบเสร็จคูปองการแลกรับสิทธิ์สำเร็จเพื่อแสดงแก่พนักงาน
+            document.getElementById('ticket-member-name').innerText = response.member.name + (response.member.nickname ? ' (' + response.member.nickname + ')' : '');
+            document.getElementById('ticket-promo-title').innerText = title;
+            document.getElementById('ticket-id').innerText = response.redemptionId;
+            document.getElementById('ticket-time').innerText = formatDateTime(new Date(response.redeemedAt));
+            document.getElementById('ticket-qr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=5D4037&bgcolor=FDFBF7&data=' + encodeURIComponent(response.redemptionId);
+            
+            // ซ่อนหน้าหลักบัตรสมาชิก แล้วสลับมาหน้าจอ Ticket ความสำเร็จ
+            document.getElementById('main-view').classList.add('hidden');
+            document.getElementById('redeem-success-view').classList.remove('hidden');
           } else {
             alert("แลกสิทธิ์ไม่สำเร็จ: " + response.message);
             logDebug("ERROR แลกสิทธิ์: " + response.message);
@@ -685,6 +761,123 @@
         function(err) {
           alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์: " + err.toString());
           logDebug("ERROR แลกสิทธิ์การเชื่อมต่อ: " + err.toString());
+        }
+      );
+    }
+
+    /**
+     * ซ่อนหน้าตั๋วคูปองที่แลกสำเร็จและเปิดหน้าบัตรสมาชิกตามปกติ
+     */
+    function closeSuccessTicket() {
+      document.getElementById('redeem-success-view').classList.add('hidden');
+      document.getElementById('main-view').classList.remove('hidden');
+      // รีโหลดคูปองใหม่เพื่ออัปเดตสิทธิ์แลกคงเหลือแบบทันท่วงที
+      if (currentMemberData) {
+        loadPromotions(currentMemberData.points, currentMemberData.lineUserId);
+      }
+    }
+
+    /**
+     * จัดรูปแบบ วัน/เดือน/ปี เวลา เพื่อแสดงผลพรีเมียม
+     */
+    function formatDateTime(date) {
+      if (!date) return '-';
+      var d = new Date(date);
+      var day = ('0' + d.getDate()).slice(-2);
+      var month = ('0' + (d.getMonth() + 1)).slice(-2);
+      var year = d.getFullYear() + 543; // แปลงเป็น พ.ศ.
+      var hours = ('0' + d.getHours()).slice(-2);
+      var minutes = ('0' + d.getMinutes()).slice(-2);
+      return day + '/' + month + '/' + year + ' ' + hours + ':' + minutes;
+    }
+
+    // ตัวแปรเก็บข้อมูล User Active Tab
+    var currentUserActiveTab = 'coupons';
+
+    /**
+     * ฟังก์ชันจัดการสลับแท็บเมนูลูกค้า (สิทธิพิเศษ VS ประวัติการแลก)
+     */
+    function switchUserTab(tabName) {
+      currentUserActiveTab = tabName;
+      
+      var tabBtnCoupons = document.getElementById('tab-btn-coupons');
+      var tabBtnHistory = document.getElementById('tab-btn-history');
+      var contentCoupons = document.getElementById('tab-content-coupons');
+      var contentHistory = document.getElementById('tab-content-history');
+      
+      if (tabName === 'coupons') {
+        tabBtnCoupons.classList.add('border-brand-dark', 'text-brand-dark');
+        tabBtnCoupons.classList.remove('border-transparent', 'text-brand-gray');
+        tabBtnHistory.classList.remove('border-brand-dark', 'text-brand-dark');
+        tabBtnHistory.classList.add('border-transparent', 'text-brand-gray');
+        
+        contentCoupons.classList.remove('hidden');
+        contentHistory.classList.add('hidden');
+        
+        if (currentMemberData) {
+          loadPromotions(currentMemberData.points, currentMemberData.lineUserId);
+        }
+      } else {
+        tabBtnHistory.classList.add('border-brand-dark', 'text-brand-dark');
+        tabBtnHistory.classList.remove('border-transparent', 'text-brand-gray');
+        tabBtnCoupons.classList.remove('border-brand-dark', 'text-brand-dark');
+        tabBtnCoupons.classList.add('border-transparent', 'text-brand-gray');
+        
+        contentHistory.classList.remove('hidden');
+        contentCoupons.classList.add('hidden');
+        
+        loadUserRedemptionHistory();
+      }
+    }
+
+    /**
+     * ดึงประวัติการแลกสิทธิ์ของลูกค้ามาแสดง
+     */
+    function loadUserRedemptionHistory() {
+      if (!currentMemberData) return;
+      
+      var listDiv = document.getElementById('history-list');
+      listDiv.innerHTML = '<div class="text-center py-6 text-xs text-brand-gray/50"><i class="fa-solid fa-spinner fa-spin mr-1"></i> กำลังโหลดประวัติ...</div>';
+      
+      callBackend(
+        'getUserRedemptions',
+        { lineUserId: currentMemberData.lineUserId },
+        function(response) {
+          if (response.status === 'success') {
+            var redemptions = response.redemptions;
+            if (redemptions.length === 0) {
+              listDiv.innerHTML = '<div class="text-center py-8 text-xs text-brand-gray/50">คุณยังไม่มีประวัติการแลกสิทธิ์</div>';
+              return;
+            }
+            
+            var html = '';
+            for (var i = 0; i < redemptions.length; i++) {
+              var r = redemptions[i];
+              var iconClass = r.icon || 'fa-gift';
+              
+              html += '<div class="flex items-center bg-brand-lightCream/30 p-3 rounded-2xl border border-brand-lightCream/50">';
+              html += '  <div class="w-10 h-10 bg-brand-lightCream rounded-xl flex items-center justify-center text-brand-gray">';
+              html += '    <i class="fa-solid ' + iconClass + ' text-sm text-brand-accent"></i>';
+              html += '  </div>';
+              html += '  <div class="ml-3 flex-grow">';
+              html += '    <h4 class="text-xs font-bold text-brand-charcoal">' + r.title + '</h4>';
+              // ป้องกันปัญหาการตัดเครื่องหมายขีดลบใน JS เก่าเมื่อสร้าง Date
+              var cleanDateStr = r.redeemedAt.replace(/-/g, '/');
+              html += '    <p class="text-[9px] text-brand-gray/60 font-mono mt-0.5">ID: ' + r.redemptionId + '</p>';
+              html += '  </div>';
+              html += '  <div class="text-right ml-2">';
+              html += '    <span class="inline-block bg-brand-dark/10 text-brand-dark text-[9px] font-bold px-2 py-0.5 rounded-full mb-1">ใช้สิทธิ์แล้ว</span>';
+              html += '    <p class="text-[8px] text-brand-gray/70">' + formatDateTime(new Date(cleanDateStr)) + '</p>';
+              html += '  </div>';
+              html += '</div>';
+            }
+            listDiv.innerHTML = html;
+          } else {
+            listDiv.innerHTML = '<div class="text-center py-6 text-xs text-red-500">โหลดประวัติล้มเหลว: ' + response.message + '</div>';
+          }
+        },
+        function(err) {
+          listDiv.innerHTML = '<div class="text-center py-6 text-xs text-red-500">ไม่สามารถเชื่อมต่อประวัติการแลกได้</div>';
         }
       );
     }
