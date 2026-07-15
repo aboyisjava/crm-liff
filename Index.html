@@ -278,34 +278,9 @@
           <i class="fa-solid fa-gift text-brand-accent"></i> สิทธิพิเศษสำหรับคุณ
         </h3>
         
-        <div class="space-y-3">
-          <!-- Coupon 1 -->
-          <div class="flex items-center bg-white p-3.5 rounded-2xl border border-brand-lightCream hover:border-brand-accent/30 transition-all duration-300">
-            <div class="w-12 h-12 bg-brand-lightCream rounded-xl flex items-center justify-center text-brand-dark">
-              <i class="fa-solid fa-percent text-lg text-brand-accent"></i>
-            </div>
-            <div class="ml-4 flex-grow">
-              <h4 class="text-xs font-bold text-brand-charcoal">รับส่วนลดเครื่องดื่ม 10%</h4>
-              <p class="text-[10px] text-brand-gray/70">ใช้ 100 แต้ม เพื่อแลกรับสิทธิ์</p>
-            </div>
-            <button class="bg-brand-dark hover:bg-brand-charcoal text-white text-[11px] font-medium px-3.5 py-1.5 rounded-full transition-colors duration-200">
-              แลกสิทธิ์
-            </button>
-          </div>
-
-          <!-- Coupon 2 -->
-          <div class="flex items-center bg-white p-3.5 rounded-2xl border border-brand-lightCream hover:border-brand-accent/30 transition-all duration-300">
-            <div class="w-12 h-12 bg-brand-lightCream rounded-xl flex items-center justify-center text-brand-dark">
-              <i class="fa-solid fa-mug-hot text-lg text-brand-accent"></i>
-            </div>
-            <div class="ml-4 flex-grow">
-              <h4 class="text-xs font-bold text-brand-charcoal">แลกรับเครื่องดื่มฟรี 1 แก้ว</h4>
-              <p class="text-[10px] text-brand-gray/70">ใช้ 500 แต้ม เพื่อแลกรับสิทธิ์</p>
-            </div>
-            <button class="bg-brand-dark hover:bg-brand-charcoal text-white text-[11px] font-medium px-3.5 py-1.5 rounded-full transition-colors duration-200">
-              แลกสิทธิ์
-            </button>
-          </div>
+        <div id="promotions-list" class="space-y-3">
+          <!-- โหลดโปรโมชั่นไดนามิกจากฐานข้อมูล -->
+          <div class="text-center py-4 text-xs text-brand-gray/50">กำลังโหลดโปรโมชั่น...</div>
         </div>
       </div>
     </div>
@@ -363,7 +338,7 @@
     var LIFF_ID = "2010716741-EOciBKIa"; 
     
     // คัดลอก URL เว็บแอปของ Google Apps Script (ที่ลงท้ายด้วย /exec) มาวางที่นี่
-    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbztLWTph0mKEno17VIiRwW2sad_XaUeTP4VUvmQjX4vI3ytWcEdRz1HZg8WCF0pP610bw/exec"; 
+    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzXnQdAx2e0g8sjkt-NXO21CO-q8mqPgnTJGlffBB3I46wcJT669BNxmlrerZwaKfNUVQ/exec"; 
     
     // โครงสร้างเกณฑ์ระดับสมาชิก (Level Rules)
     var TIER_RULES = [
@@ -617,7 +592,101 @@
       var shortId = member.lineUserId.substring(0, 8) + '...' + member.lineUserId.substring(member.lineUserId.length - 6);
       document.getElementById('member-id-text').innerText = 'ID: ' + shortId;
       
+      // 7. โหลดรายการสิทธิประโยชน์/โปรโมชั่นหน้าร้านแบบเรียลไทม์
+      loadPromotions(member.points, member.lineUserId);
+      
       logDebug("บัตรสมาชิกอัปเดตข้อมูลและแสดงผลสมบูรณ์.");
+    }
+
+    /**
+     * ดึงข้อมูลโปรโมชั่นจากหลังบ้านแบบไดนามิกและแสดงผล
+     */
+    function loadPromotions(userPoints, lineUserId) {
+      logDebug("กำลังโหลดสิทธิประโยชน์และโปรโมชั่นไดนามิก...");
+      var listDiv = document.getElementById('promotions-list');
+      
+      callBackend(
+        'getPromotions',
+        {},
+        function(response) {
+          if (response.status === 'success') {
+            var promos = response.promotions;
+            
+            // กรองเอาเฉพาะโปรโมชั่นที่สถานะ Active
+            var activePromos = promos.filter(function(p) { return p.status === 'Active'; });
+            
+            if (activePromos.length === 0) {
+              listDiv.innerHTML = '<div class="text-center py-4 text-xs text-brand-gray/50">ไม่มีสิทธิประโยชน์ที่สามารถแลกได้ในขณะนี้</div>';
+              logDebug("โหลดโปรโมชั่นเสร็จสิ้น (ไม่มีรายการโปรโมชั่น)");
+              return;
+            }
+            
+            var html = '';
+            for (var i = 0; i < activePromos.length; i++) {
+              var p = activePromos[i];
+              var isEnough = userPoints >= p.pointsRequired;
+              var btnClass = isEnough 
+                ? 'bg-brand-dark hover:bg-brand-charcoal text-white' 
+                : 'bg-brand-lightCream text-brand-gray/30 cursor-not-allowed';
+              var btnText = isEnough ? 'แลกสิทธิ์' : 'แต้มไม่พอ';
+              var btnDisabled = isEnough ? '' : 'disabled';
+              
+              var iconClass = p.icon || 'fa-gift';
+              
+              html += '<div class="flex items-center bg-white p-3.5 rounded-2xl border border-brand-lightCream hover:border-brand-accent/30 transition-all duration-300">';
+              html += '  <div class="w-12 h-12 bg-brand-lightCream rounded-xl flex items-center justify-center text-brand-dark">';
+              html += '    <i class="fa-solid ' + iconClass + ' text-lg text-brand-accent"></i>';
+              html += '  </div>';
+              html += '  <div class="ml-4 flex-grow">';
+              html += '    <h4 class="text-xs font-bold text-brand-charcoal">' + p.title + '</h4>';
+              html += '    <p class="text-[10px] text-brand-gray/70">' + p.description + ' (ใช้ ' + p.pointsRequired + ' แต้ม)</p>';
+              html += '  </div>';
+              html += '  <button onclick="redeemPromo(\'' + lineUserId + '\', \'' + p.id + '\', \'' + p.title.replace(/'/g, "\\'") + '\', ' + p.pointsRequired + ')" ' + btnDisabled + ' class="' + btnClass + ' text-[11px] font-medium px-3.5 py-1.5 rounded-full transition-colors duration-200">';
+              html += '    ' + btnText;
+              html += '  </button>';
+              html += '</div>';
+            }
+            listDiv.innerHTML = html;
+            logDebug("โหลดโปรโมชั่นและแสดงผลสำเร็จ (" + activePromos.length + " รายการ)");
+          } else {
+            listDiv.innerHTML = '<div class="text-center py-4 text-xs text-red-500">โหลดข้อมูลโปรโมชั่นล้มเหลว</div>';
+            logDebug("ERROR โหลดโปรโมชั่น: " + response.message);
+          }
+        },
+        function(err) {
+          listDiv.innerHTML = '<div class="text-center py-4 text-xs text-red-500">ไม่สามารถเชื่อมต่อโปรโมชั่นได้</div>';
+          logDebug("ERROR API getPromotions: " + err.toString());
+        }
+      );
+    }
+
+    /**
+     * ดำเนินการหักแต้มสมาชิกเพื่อแลกของรางวัล/โปรโมชั่น
+     */
+    function redeemPromo(lineUserId, promoId, title, pointsRequired) {
+      if (!confirm("คุณต้องการใช้ " + pointsRequired + " คะแนน เพื่อแลกรับสิทธิ์ \"" + title + "\" ใช่หรือไม่?")) {
+        return;
+      }
+      
+      logDebug("กำลังส่งคำขอแลกรับสิทธิ์ " + title + "...");
+      callBackend(
+        'redeemPromotion',
+        { lineUserId: lineUserId, promoId: promoId },
+        function(response) {
+          if (response.status === 'success') {
+            alert("แลกสิทธิ์สำเร็จ: " + response.message);
+            logDebug("แลกสิทธิ์ \"" + title + "\" สำเร็จ!");
+            updateUI(response.member); // อัปเดต UI บัตรและแต้มคงเหลือแบบเรียลไทม์
+          } else {
+            alert("แลกสิทธิ์ไม่สำเร็จ: " + response.message);
+            logDebug("ERROR แลกสิทธิ์: " + response.message);
+          }
+        },
+        function(err) {
+          alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์: " + err.toString());
+          logDebug("ERROR แลกสิทธิ์การเชื่อมต่อ: " + err.toString());
+        }
+      );
     }
 
     /**

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Merchant Admin CRM Dashboard</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Prompt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome for Premium Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cream: '#FDFBF7',
+              dark: '#5D4037',
+              gold: '#D4AF37',
+              accent: '#8D6E63',
+              lightCream: '#F5EFEB',
+              gray: '#7D6861',
+              charcoal: '#2E2522'
+            }
+          },
+          fontFamily: {
+            sans: ['Prompt', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #FDFBF7;
+    }
+    /* ซ่อน Scrollbar ของบราวเซอร์ */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #FDFBF7;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #8D6E63;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="font-sans antialiased text-brand-charcoal min-h-screen flex flex-col justify-between">
+
+  <!-- ==================== PASSCODE GATE SCREEN ==================== -->
+  <div id="login-screen" class="flex-grow flex flex-col justify-center items-center px-6 py-12">
+    <div class="w-full max-w-md bg-white rounded-3xl p-8 shadow-xl border border-brand-lightCream text-center">
+      <div class="w-16 h-16 bg-brand-lightCream rounded-full flex items-center justify-center mb-4 text-brand-dark mx-auto">
+        <i class="fa-solid fa-lock text-2xl text-brand-accent"></i>
+      </div>
+      <h2 class="text-xl font-bold text-brand-dark mb-2">Merchant CRM Dashboard</h2>
+      <p class="text-xs text-brand-gray mb-6">สำหรับเจ้าหน้าที่/แคชเชียร์ กรอกรหัสเพื่อเข้าใช้งาน</p>
+      
+      <form onsubmit="verifyPasscode(event)" class="space-y-4">
+        <input type="password" id="passcode" required placeholder="กรอกรหัสผ่าน (รหัสตั้งต้น: 1234)" 
+          class="w-full bg-brand-cream border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-2xl px-4 py-3.5 text-center text-lg tracking-widest outline-none transition-all duration-200">
+        <button type="submit" 
+          class="w-full bg-brand-dark hover:bg-brand-charcoal text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all duration-300 transform active:scale-95">
+          เข้าสู่ระบบการจัดการ
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN DASHBOARD SCREEN ==================== -->
+  <div id="dashboard-screen" class="hidden w-full max-w-6xl mx-auto px-4 md:px-6 py-8 flex-grow">
+    
+    <!-- Top Header -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 border-b border-brand-lightCream pb-6 mb-8">
+      <div>
+        <span class="text-xs uppercase tracking-widest text-brand-gray font-semibold">Store Manager</span>
+        <h1 class="text-2xl font-bold text-brand-dark flex items-center gap-2">
+          <i class="fa-solid fa-mug-hot text-brand-accent"></i> PREMIUM COFFEE CRM DASHBOARD
+        </h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="reloadData()" class="bg-brand-lightCream hover:bg-brand-lightCream/80 text-brand-dark text-xs font-semibold py-2.5 px-4 rounded-xl border border-brand-accent/20 transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate text-sm"></i> รีเฟรชข้อมูล
+        </button>
+        <button onclick="logoutAdmin()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold py-2.5 px-4 rounded-xl border border-red-200/50 transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-right-from-bracket text-sm"></i> ออกจากระบบ
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="flex gap-2 border-b border-brand-lightCream mb-6">
+      <button id="tab-btn-members" onclick="switchTab('members')" class="px-5 py-3 text-sm font-bold text-brand-dark border-b-2 border-brand-dark">
+        <i class="fa-solid fa-users mr-1.5"></i> จัดการแต้มสมาชิก
+      </button>
+      <button id="tab-btn-promotions" onclick="switchTab('promotions')" class="px-5 py-3 text-sm font-bold text-brand-gray border-b-2 border-transparent hover:text-brand-dark">
+        <i class="fa-solid fa-tags mr-1.5"></i> จัดการคูปอง & โปรโมชั่น
+      </button>
+    </div>
+
+    <!-- TAB 1: MEMBERS MANAGEMENT -->
+    <div id="tab-content-members" class="space-y-6">
+      <!-- Search & Status Bar -->
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-brand-lightCream shadow-sm">
+        <div class="relative w-full md:w-80">
+          <input type="text" id="member-search" oninput="filterMembers()" placeholder="ค้นหาโดย ชื่อ / ชื่อเล่น / เบอร์โทร..." 
+            class="w-full bg-brand-cream border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-xl pl-10 pr-4 py-2.5 text-xs outline-none transition-all duration-200">
+          <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-brand-gray">
+            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+          </div>
+        </div>
+        <div class="text-xs font-semibold text-brand-gray">
+          จำนวนสมาชิกทั้งหมด: <span id="members-count" class="text-brand-dark text-sm">0</span> คน
+        </div>
+      </div>
+
+      <!-- Members Table -->
+      <div class="bg-white rounded-3xl border border-brand-lightCream shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-brand-lightCream text-brand-dark text-xs uppercase font-bold border-b border-brand-lightCream">
+                <th class="px-6 py-4">โปรไฟล์</th>
+                <th class="px-6 py-4">ชื่อสมาชิก / LINE ID</th>
+                <th class="px-6 py-4">ข้อมูลติดต่อ</th>
+                <th class="px-6 py-4">ข้อมูลอายุ/เพศ</th>
+                <th class="px-6 py-4 text-center">ระดับสมาชิก</th>
+                <th class="px-6 py-4 text-center">แต้มสะสม</th>
+                <th class="px-6 py-4 text-center">จัดการแต้ม</th>
+              </tr>
+            </thead>
+            <tbody id="members-table-body" class="divide-y divide-brand-lightCream text-xs text-brand-charcoal">
+              <!-- สมาชิกโหลดจากฐานข้อมูล -->
+              <tr>
+                <td colspan="7" class="px-6 py-12 text-center text-brand-gray/50">
+                  <i class="fa-solid fa-spinner fa-spin text-xl mb-2 block"></i> กำลังโหลดรายชื่อสมาชิก...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: PROMOTIONS MANAGEMENT -->
+    <div id="tab-content-promotions" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Add Promotion Form Card -->
+      <div class="lg:col-span-1 bg-white rounded-3xl p-6 border border-brand-lightCream shadow-sm flex flex-col justify-between">
+        <div>
+          <h2 class="text-md font-bold text-brand-dark mb-1 flex items-center gap-1.5">
+            <i class="fa-solid fa-plus-circle text-brand-accent"></i> เพิ่มสิทธิ์/โปรโมชั่นใหม่
+          </h2>
+          <p class="text-[11px] text-brand-gray mb-6 leading-relaxed">กรอกข้อมูลและสิทธิ์ประโยชน์ของร้าน เพื่อส่งไปแสดงผลให้ลูกค้าเห็นในหน้าจอ LINE</p>
+          
+          <form id="promo-form" onsubmit="submitPromotion(event)" class="space-y-4">
+            <!-- Promo Title -->
+            <div class="flex flex-col">
+              <label for="promo-title" class="text-xs font-semibold text-brand-gray mb-1">ชื่อโปรโมชั่น/สิทธิ์ที่ได้ <span class="text-red-500">*</span></label>
+              <input type="text" id="promo-title" required placeholder="เช่น รับส่วนลดเครื่องดื่ม 20 บาท" 
+                class="bg-brand-cream border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-xl px-4 py-2.5 text-xs outline-none transition-all duration-200">
+            </div>
+
+            <!-- Description -->
+            <div class="flex flex-col">
+              <label for="promo-description" class="text-xs font-semibold text-brand-gray mb-1">รายละเอียดเงื่อนไข</label>
+              <textarea id="promo-description" rows="2" placeholder="เช่น จำกัด 1 สิทธิ์ต่อวัน ร้อน/เย็น" 
+                class="bg-brand-cream border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-xl px-4 py-2.5 text-xs outline-none transition-all duration-200 resize-none"></textarea>
+            </div>
+
+            <!-- Points Required -->
+            <div class="flex flex-col">
+              <label for="promo-points" class="text-xs font-semibold text-brand-gray mb-1">แต้มที่ต้องใช้ <span class="text-red-500">*</span></label>
+              <input type="number" id="promo-points" required min="0" placeholder="ระบุจำนวนแต้ม เช่น 100" 
+                class="bg-brand-cream border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-xl px-4 py-2.5 text-xs outline-none transition-all duration-200">
+            </div>
+
+            <!-- Icon Selector -->
+            <div class="flex flex-col">
+              <label for="promo-icon" class="text-xs font-semibold text-brand-gray mb-1">สัญลักษณ์ (ไอคอนแสดงหน้าแอป)</label>
+              <div class="relative">
+                <select id="promo-icon" 
+                  class="w-full bg-brand-cream border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-xl px-4 py-2.5 text-xs outline-none appearance-none transition-all duration-200">
+                  <option value="fa-percent">☕ เครื่องหมายส่วนลด (%)</option>
+                  <option value="fa-mug-hot">☕ แก้วกาแฟร้อน (Mug)</option>
+                  <option value="fa-gift">🎁 ของขวัญ (Gift)</option>
+                  <option value="fa-tag">🏷️ ป้ายราคา (Tag)</option>
+                  <option value="fa-award">🏅 เหรียญรางวัล (Award)</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-brand-gray">
+                  <i class="fa-solid fa-chevron-down text-xs"></i>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" id="btn-submit-promo" 
+              class="w-full bg-brand-dark hover:bg-brand-charcoal text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all duration-300 transform active:scale-95 flex justify-center items-center gap-1.5 mt-2">
+              <span>บันทึกข้อมูลคูปอง</span>
+              <i id="promo-spinner" class="fa-solid fa-circle-notch fa-spin hidden"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Promotions List Table -->
+      <div class="lg:col-span-2 bg-white rounded-3xl p-6 border border-brand-lightCream shadow-sm flex flex-col">
+        <h2 class="text-md font-bold text-brand-dark mb-4 flex items-center gap-1.5">
+          <i class="fa-solid fa-list-ul text-brand-accent"></i> รายการโปรโมชั่นที่มีในระบบ
+        </h2>
+        
+        <div class="overflow-x-auto flex-grow">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-brand-lightCream text-brand-dark text-[11px] uppercase font-bold border-b border-brand-lightCream">
+                <th class="px-4 py-3">ไอคอน</th>
+                <th class="px-4 py-3">ชื่อโปรโมชั่น / รายละเอียด</th>
+                <th class="px-4 py-3 text-center">แต้มสะสมที่ใช้</th>
+                <th class="px-4 py-3 text-center">สถานะ</th>
+                <th class="px-4 py-3 text-center">การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="promo-table-body" class="divide-y divide-brand-lightCream text-xs text-brand-charcoal">
+              <!-- โปรโมชั่นโหลดจากฐานข้อมูล -->
+              <tr>
+                <td colspan="5" class="px-4 py-12 text-center text-brand-gray/50">
+                  <i class="fa-solid fa-spinner fa-spin text-lg mb-2 block"></i> กำลังโหลดรายการสิทธิพิเศษ...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="w-full max-w-6xl mx-auto px-6 py-6 border-t border-brand-lightCream text-center">
+    <p class="text-[10px] text-brand-gray/50 font-medium">&copy; 2026 Premium Coffee Cashier CRM Dashboard. All Rights Reserved.</p>
+  </div>
+
+  <!-- ==================== POINT ADJUSTMENT MODAL ==================== -->
+  <div id="points-modal" class="hidden fixed inset-0 bg-brand-charcoal/50 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+    <div class="w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-brand-lightCream">
+      <div class="flex justify-between items-center mb-4 pb-3 border-b border-brand-lightCream">
+        <h3 class="text-sm font-bold text-brand-dark">ปรับแก้คะแนนสะสม</h3>
+        <button onclick="closePointsModal()" class="text-brand-gray hover:text-brand-charcoal">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      
+      <!-- Selected Member Summary -->
+      <div class="bg-brand-lightCream/50 p-4 rounded-2xl mb-4 flex items-center gap-3">
+        <img id="modal-member-avatar" src="" alt="Avatar" class="w-10 h-10 rounded-full border border-white object-cover">
+        <div>
+          <h4 id="modal-member-name" class="text-xs font-bold text-brand-charcoal">MyName's Arm</h4>
+          <p class="text-[10px] text-brand-gray">คะแนนปัจจุบัน: <span id="modal-member-current-points" class="font-bold text-brand-dark">0</span> แต้ม</p>
+        </div>
+      </div>
+
+      <!-- Adjustment Form -->
+      <form onsubmit="submitPointsAdjustment(event)" class="space-y-4">
+        <input type="hidden" id="modal-member-id">
+        
+        <div class="flex flex-col">
+          <label for="modal-adjust-amt" class="text-xs font-semibold text-brand-gray mb-1">
+            ระบุคะแนนที่ต้องการเพิ่มหรือลด <span class="text-red-500">*</span>
+          </label>
+          <input type="number" id="modal-adjust-amt" required placeholder="ใส่ค่าบวกเพื่อเพิ่ม (เช่น 50), ใส่ลบเพื่อลด (เช่น -10)"
+            class="bg-brand-cream border border-brand-lightCream focus:border-brand-dark focus:ring-1 focus:ring-brand-dark rounded-xl px-4 py-3 text-center text-md font-bold outline-none transition-all duration-200">
+          <span class="text-[9px] text-brand-gray/80 mt-1 leading-relaxed">
+            *ตัวอย่าง: ลูกค้าสั่งกาแฟได้ 50 แต้ม ให้พิมพ์ <span class="font-bold">50</span><br>
+            *ตัวอย่าง: ต้องการหักลบแต้มพิมพ์ของลูกค้าออก 20 แต้ม ให้พิมพ์ <span class="font-bold">-20</span>
+          </span>
+        </div>
+
+        <button type="submit" id="btn-submit-points" 
+          class="w-full bg-brand-dark hover:bg-brand-charcoal text-white font-bold py-3.5 px-6 rounded-2xl shadow-md transition-all duration-300 transform active:scale-95 flex justify-center items-center gap-1.5">
+          <span>ยืนยันบันทึกแต้ม</span>
+          <i id="modal-points-spinner" class="fa-solid fa-circle-notch fa-spin hidden"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ==================== CONFIGURATION ====================
+    // !!! วาง URL เว็บแอปของ Google Apps Script (ที่ลงท้ายด้วย /exec) !!!
+    var WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzXnQdAx2e0g8sjkt-NXO21CO-q8mqPgnTJGlffBB3I46wcJT669BNxmlrerZwaKfNUVQ/exec";
+    
+    // ตั้งรหัสผ่านในการเข้าถึงหน้า Cashier
+    var ADMIN_PASSCODE = "1234";
+
+    // ตัวแปรเก็บข้อมูลฝั่ง Client
+    var globalMembersList = [];
+    var currentActiveTab = 'members';
+
+    /**
+     * ส่งคำขอไปยัง Google Apps Script Backend (REST API Mode)
+     */
+    function callBackend(action, data, onSuccess, onFailure) {
+      if (WEB_APP_URL === "วาง_WEB_APP_URL_ของคุณที่นี่" || !WEB_APP_URL) {
+        alert("กรุณาเปิดตั้งค่าใส่ลิงก์ WEB_APP_URL ของ Google Apps Script ที่ด้านบนของไฟล์ admin.html ก่อนเริ่มใช้งานครับ");
+        onFailure("WEB_APP_URL missing");
+        return;
+      }
+      
+      var payload = Object.assign({ action: action }, data);
+      
+      fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      })
+      .then(function(res) {
+        if (!res.ok) throw new Error("HTTP error " + res.status);
+        return res.json();
+      })
+      .then(function(response) {
+        onSuccess(response);
+      })
+      .catch(function(err) {
+        console.error("API Call Failed:", err);
+        onFailure(err);
+      });
+    }
+
+    /**
+     * การตรวจสอบรหัสผ่าน Passcode
+     */
+    function verifyPasscode(event) {
+      event.preventDefault();
+      var input = document.getElementById('passcode').value;
+      if (input === ADMIN_PASSCODE) {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('dashboard-screen').classList.remove('hidden');
+        // โหลดข้อมูลเข้าสู่หน้าแดชบอร์ด
+        reloadData();
+      } else {
+        alert("รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+        document.getElementById('passcode').value = "";
+      }
+    }
+
+    /**
+     * ล็อกเอาต์ออกจากหน้าแอดมิน
+     */
+    function logoutAdmin() {
+      document.getElementById('dashboard-screen').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('passcode').value = "";
+    }
+
+    /**
+     * ดึงข้อมูลและรีเฟรชข้อมูลทั้งหมดจาก Google Sheet
+     */
+    function reloadData() {
+      if (currentActiveTab === 'members') {
+        loadMembersData();
+      } else {
+        loadPromotionsData();
+      }
+    }
+
+    /**
+     * โหลดรายชื่อสมาชิก
+     */
+    function loadMembersData() {
+      var tbody = document.getElementById('members-table-body');
+      tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center text-brand-gray/50"><i class="fa-solid fa-spinner fa-spin text-xl mb-2 block"></i> กำลังอัปเดตสมาชิก...</td></tr>';
+      
+      callBackend(
+        'getMembers',
+        {},
+        function(response) {
+          if (response.status === 'success') {
+            globalMembersList = response.members;
+            renderMembersTable(globalMembersList);
+          } else {
+            tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center text-red-500">เกิดข้อผิดพลาด: ' + response.message + '</td></tr>';
+          }
+        },
+        function(err) {
+          tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center text-red-500">ไม่สามารถดึงข้อมูลสมาชิกได้ (เช็ก WEB_APP_URL)</td></tr>';
+        }
+      );
+    }
+
+    /**
+     * แสดงผลตารางสมาชิก
+     */
+    function renderMembersTable(members) {
+      var tbody = document.getElementById('members-table-body');
+      document.getElementById('members-count').innerText = members.length;
+      
+      if (members.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-12 text-center text-brand-gray/50">ยังไม่มีรายชื่อผู้สมัครสมาชิกในตาราง</td></tr>';
+        return;
+      }
+      
+      var html = '';
+      for (var i = 0; i < members.length; i++) {
+        var m = members[i];
+        var avatar = m.profileImg || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+        var shortId = m.lineUserId.substring(0, 8) + '...';
+        
+        html += '<tr class="hover:bg-brand-lightCream/30 transition-colors">';
+        html += '  <td class="px-6 py-4">';
+        html += '    <img src="' + avatar + '" alt="Profile" class="w-10 h-10 rounded-full border border-brand-lightCream object-cover">';
+        html += '  </td>';
+        html += '  <td class="px-6 py-4">';
+        html += '    <div class="font-bold text-brand-dark">' + m.name + (m.nickname ? ' (' + m.nickname + ')' : '') + '</div>';
+        html += '    <div class="text-[10px] text-brand-gray font-mono mt-0.5" title="' + m.lineUserId + '">ID: ' + shortId + '</div>';
+        html += '  </td>';
+        html += '  <td class="px-6 py-4 font-medium">' + (m.phone || '-') + '</td>';
+        html += '  <td class="px-6 py-4 text-brand-gray/80">' + (m.gender || 'ไม่ระบุ') + ' / ' + (m.birthdate || '-') + '</td>';
+        
+        // Level Badge
+        html += '  <td class="px-6 py-4 text-center">';
+        html += '    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-brand-lightCream text-brand-dark border border-brand-accent/20">';
+        html += '      <i class="fa-solid fa-crown text-brand-gold text-[9px] mr-1"></i> ' + m.level;
+        html += '    </span>';
+        html += '  </td>';
+        
+        // Points
+        html += '  <td class="px-6 py-4 text-center font-bold text-sm text-brand-dark">' + Number(m.points).toLocaleString() + '</td>';
+        
+        // Adjust points button
+        html += '  <td class="px-6 py-4 text-center">';
+        html += '    <button onclick="openPointsModal(\'' + m.lineUserId + '\', \'' + m.name.replace(/'/g, "\\'") + '\', ' + m.points + ', \'' + avatar + '\')" class="bg-brand-dark hover:bg-brand-charcoal text-white font-bold py-1.5 px-3 rounded-xl transition-all duration-200 transform active:scale-95 flex items-center gap-1.5 mx-auto">';
+        html += '      <i class="fa-solid fa-plus-minus text-[10px]"></i> ปรับแต้ม';
+        html += '    </button>';
+        html += '  </td>';
+        html += '</tr>';
+      }
+      
+      tbody.innerHTML = html;
+    }
+
+    /**
+     * ค้นหาและคัดกรองสมาชิกตามพิมพ์ของแคชเชียร์
+     */
+    function filterMembers() {
+      var query = document.getElementById('member-search').value.toLowerCase().trim();
+      if (!query) {
+        renderMembersTable(globalMembersList);
+        return;
+      }
+      
+      var filtered = globalMembersList.filter(function(m) {
+        return m.name.toLowerCase().includes(query) || 
+               m.nickname.toLowerCase().includes(query) || 
+               m.phone.includes(query) ||
+               m.lineUserId.toLowerCase().includes(query);
+      });
+      
+      renderMembersTable(filtered);
+    }
+
+    /**
+     * โหลดข้อมูลสิทธิพิเศษโปรโมชั่น
+     */
+    function loadPromotionsData() {
+      var tbody = document.getElementById('promo-table-body');
+      tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-12 text-center text-brand-gray/50"><i class="fa-solid fa-spinner fa-spin text-lg mb-2 block"></i> กำลังดึงรายการ...</td></tr>';
+      
+      callBackend(
+        'getPromotions',
+        {},
+        function(response) {
+          if (response.status === 'success') {
+            renderPromotionsTable(response.promotions);
+          } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-12 text-center text-red-500">เกิดข้อผิดพลาด: ' + response.message + '</td></tr>';
+          }
+        },
+        function(err) {
+          tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-12 text-center text-red-500">ไม่สามารถเชื่อมต่อดึงโปรโมชั่นได้</td></tr>';
+        }
+      );
+    }
+
+    /**
+     * แสดงผลตารางโปรโมชั่น
+     */
+    function renderPromotionsTable(promos) {
+      var tbody = document.getElementById('promo-table-body');
+      
+      if (promos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-12 text-center text-brand-gray/50">ยังไม่มีรายการคูปองโปรโมชั่นในตาราง</td></tr>';
+        return;
+      }
+      
+      var html = '';
+      for (var i = 0; i < promos.length; i++) {
+        var p = promos[i];
+        var iconClass = p.icon || 'fa-gift';
+        
+        html += '<tr class="hover:bg-brand-lightCream/30 transition-colors">';
+        html += '  <td class="px-4 py-4 text-center">';
+        html += '    <div class="w-10 h-10 bg-brand-lightCream rounded-xl flex items-center justify-center text-brand-accent mx-auto">';
+        html += '      <i class="fa-solid ' + iconClass + ' text-lg"></i>';
+        html += '    </div>';
+        html += '  </td>';
+        html += '  <td class="px-4 py-4">';
+        html += '    <div class="font-bold text-brand-dark">' + p.title + '</div>';
+        html += '    <div class="text-[10px] text-brand-gray mt-0.5">' + p.description + '</div>';
+        html += '  </td>';
+        html += '  <td class="px-4 py-4 text-center font-bold text-brand-dark">' + p.pointsRequired + ' แต้ม</td>';
+        
+        // Status Badge
+        html += '  <td class="px-4 py-4 text-center">';
+        html += '    <span class="inline-block px-2.5 py-1 rounded-full text-[9px] font-bold bg-green-50 text-green-700 border border-green-200/50">';
+        html += '      ' + p.status;
+        html += '    </span>';
+        html += '  </td>';
+        
+        // Actions
+        html += '  <td class="px-4 py-4 text-center">';
+        html += '    <button onclick="deletePromotionAction(\'' + p.id + '\')" class="bg-red-50 hover:bg-red-100 text-red-600 font-bold py-1.5 px-3 rounded-lg border border-red-200/50 transition-colors duration-200 transform active:scale-95 flex items-center gap-1 mx-auto">';
+        html += '      <i class="fa-solid fa-trash-can text-[10px]"></i> ลบ';
+        html += '    </button>';
+        html += '  </td>';
+        html += '</tr>';
+      }
+      
+      tbody.innerHTML = html;
+    }
+
+    /**
+     * ส่งคำขอสร้างโปรโมชั่นใหม่
+     */
+    function submitPromotion(event) {
+      event.preventDefault();
+      
+      var submitBtn = document.getElementById('btn-submit-promo');
+      var spinner = document.getElementById('promo-spinner');
+      
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-75');
+      spinner.classList.remove('hidden');
+      
+      var title = document.getElementById('promo-title').value;
+      var description = document.getElementById('promo-description').value;
+      var points = document.getElementById('promo-points').value;
+      var icon = document.getElementById('promo-icon').value;
+      
+      callBackend(
+        'addPromotion',
+        { title: title, description: description, pointsRequired: points, icon: icon },
+        function(response) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-75');
+          spinner.classList.add('hidden');
+          
+          if (response.status === 'success') {
+            alert(response.message);
+            // เคลียร์ค่าฟอร์ม
+            document.getElementById('promo-form').reset();
+            // โหลดข้อมูลโปรโมชั่นในตารางใหม่
+            loadPromotionsData();
+          } else {
+            alert("เพิ่มข้อมูลล้มเหลว: " + response.message);
+          }
+        },
+        function(err) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-75');
+          spinner.classList.add('hidden');
+          alert("ไม่สามารถติดต่อเซิร์ฟเวอร์ได้: " + err.toString());
+        }
+      );
+    }
+
+    /**
+     * ดำเนินการลบโปรโมชั่น
+     */
+    function deletePromotionAction(promoId) {
+      if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบสิทธิพิเศษคูปองนี้ออกจากระบบ?")) {
+        return;
+      }
+      
+      callBackend(
+        'deletePromotion',
+        { promoId: promoId },
+        function(response) {
+          if (response.status === 'success') {
+            alert(response.message);
+            loadPromotionsData();
+          } else {
+            alert("การลบล้มเหลว: " + response.message);
+          }
+        },
+        function(err) {
+          alert("ไม่สามารถติดต่อเซิร์ฟเวอร์ได้: " + err.toString());
+        }
+      );
+    }
+
+    // ==================== POINT MODAL ACTIONS ====================
+    
+    function openPointsModal(lineUserId, name, currentPoints, avatar) {
+      document.getElementById('modal-member-id').value = lineUserId;
+      document.getElementById('modal-member-name').innerText = name;
+      document.getElementById('modal-member-current-points').innerText = Number(currentPoints).toLocaleString();
+      document.getElementById('modal-member-avatar').src = avatar;
+      document.getElementById('modal-adjust-amt').value = "";
+      
+      document.getElementById('points-modal').classList.remove('hidden');
+    }
+    
+    function closePointsModal() {
+      document.getElementById('points-modal').classList.add('hidden');
+    }
+
+    /**
+     * ดำเนินการบันทึกการปรับคะแนนสมาชิก (เพิ่ม/ลดแต้ม)
+     */
+    function submitPointsAdjustment(event) {
+      event.preventDefault();
+      
+      var submitBtn = document.getElementById('btn-submit-points');
+      var spinner = document.getElementById('modal-points-spinner');
+      
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-75');
+      spinner.classList.remove('hidden');
+      
+      var userId = document.getElementById('modal-member-id').value;
+      var pointsAmt = document.getElementById('modal-adjust-amt').value;
+      
+      callBackend(
+        'updateMemberPoints',
+        { lineUserId: userId, pointsToAdd: pointsAmt },
+        function(response) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-75');
+          spinner.classList.add('hidden');
+          
+          if (response.status === 'success') {
+            alert("อัปเดตแต้มสำเร็จ! แต้มปัจจุบันคือ " + response.points + " คะแนน (" + response.level + ")");
+            closePointsModal();
+            loadMembersData(); // โหลดรายชื่อเพื่อรีเฟรชตารางใหม่
+          } else {
+            alert("อัปเดตล้มเหลว: " + response.message);
+          }
+        },
+        function(err) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-75');
+          spinner.classList.add('hidden');
+          alert("ไม่สามารถอัปเดตคะแนนได้: " + err.toString());
+        }
+      );
+    }
+
+    // ==================== TABS SWAP SYSTEM ====================
+    
+    function switchTab(tabName) {
+      currentActiveTab = tabName;
+      
+      var tabMembers = document.getElementById('tab-btn-members');
+      var tabPromos = document.getElementById('tab-btn-promotions');
+      var contentMembers = document.getElementById('tab-content-members');
+      var contentPromos = document.getElementById('tab-content-promotions');
+      
+      if (tabName === 'members') {
+        tabMembers.classList.add('border-brand-dark', 'text-brand-dark');
+        tabMembers.classList.remove('border-transparent', 'text-brand-gray');
+        tabPromos.classList.remove('border-brand-dark', 'text-brand-dark');
+        tabPromos.classList.add('border-transparent', 'text-brand-gray');
+        
+        contentMembers.classList.remove('hidden');
+        contentPromos.classList.add('hidden');
+        
+        loadMembersData();
+      } else {
+        tabPromos.classList.add('border-brand-dark', 'text-brand-dark');
+        tabPromos.classList.remove('border-transparent', 'text-brand-gray');
+        tabMembers.classList.remove('border-brand-dark', 'text-brand-dark');
+        tabMembers.classList.add('border-transparent', 'text-brand-gray');
+        
+        contentPromos.classList.remove('hidden');
+        contentMembers.classList.add('hidden');
+        
+        loadPromotionsData();
+      }
+    }
+  </script>
+</body>
+</html>
